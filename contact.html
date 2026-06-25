@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Job Fit Check</title>
+<meta name="description" content="Contact us about the Job Fit Check Chrome extension.">
+<style>
+  :root{
+    --bg:#0d0d0c;
+    --bg-soft:#151513;
+    --border:#2c2c29;
+    --text:#f5f5f3;
+    --text-dim:#b3b2ac;
+    --text-faint:#7c7b76;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    line-height:1.65;
+  }
+  .shell{max-width:600px;margin:0 auto;padding:56px 24px 80px;}
+  .logo-row{display:flex;align-items:center;gap:10px;margin-bottom:48px;}
+  .logo-row img{height:28px;display:block;}
+  .logo-row span{font-size:15px;font-weight:800;letter-spacing:1.5px;}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:12px;}
+  h1{font-size:36px;font-weight:900;letter-spacing:-0.03em;line-height:1.1;margin-bottom:14px;}
+  .sub{font-size:15px;color:var(--text-dim);margin-bottom:40px;}
+
+  .field{margin-bottom:20px;}
+  label{display:block;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;}
+  input, textarea{
+    width:100%;
+    background:var(--bg-soft);
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:13px 14px;
+    color:var(--text);
+    font-family:inherit;
+    font-size:14px;
+    outline:none;
+  }
+  input:focus, textarea:focus{border-color:#5c5c56;}
+  textarea{resize:vertical;min-height:140px;}
+
+  .submit-btn{
+    display:inline-block;
+    padding:13px 26px;
+    background:var(--text);
+    color:var(--bg);
+    font-size:13px;
+    font-weight:700;
+    border:none;
+    border-radius:9px;
+    cursor:pointer;
+    margin-top:8px;
+  }
+  .submit-btn:hover{background:#d8d8d4;}
+
+  .note{font-size:12px;color:var(--text-faint);margin-top:14px;}
+  .direct-email{margin-top:36px;padding-top:28px;border-top:1px solid var(--border);font-size:14px;color:var(--text-dim);}
+  .direct-email a{color:var(--text);text-decoration:underline;text-decoration-color:var(--border);}
+  .direct-email a:hover{text-decoration-color:var(--text);}
+
+  .divider{border:none;border-top:1px solid var(--border);margin:48px 0 32px;}
+  .footer-nav{display:flex;gap:20px;font-size:13px;}
+  .footer-nav a{color:var(--text-faint);text-decoration:none;}
+  .footer-nav a:hover{color:var(--text);}
+  .footer-copy{margin-top:16px;font-size:12px;color:var(--text-faint);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="logo-row">
+    <img src="images/logo.png" alt="Job Fit Check logo">
+    <span>JOB FIT CHECK</span>
+  </div>
+
+  <div class="eyebrow">Support</div>
+  <h1>Get in touch</h1>
+  <p class="sub">Questions, bug reports, or feedback about Job Fit Check — send us a message and we'll get back to you.</p>
+
+  <form id="contact-form" action="mailto:mangesh.lokade.dev@gmail.com" method="post" enctype="text/plain">
+    <div class="field">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" placeholder="Your name" required>
+    </div>
+    <div class="field">
+      <label for="email">Your email</label>
+      <input type="email" id="email" name="email" placeholder="you@example.com" required>
+    </div>
+    <div class="field">
+      <label for="message">Message</label>
+      <textarea id="message" name="message" placeholder="What's going on?" required></textarea>
+    </div>
+    <button type="submit" class="submit-btn">Send message →</button>
+    <div class="note">This opens your email app with the message pre-filled, addressed to mangesh.lokade.dev@gmail.com. Nothing is sent automatically — you'll need to hit send from your own email client.</div>
+  </form>
+
+  <div class="direct-email">
+    Prefer to email directly? Reach us at
+    <a href="mailto:mangesh.lokade.dev@gmail.com">mangesh.lokade.dev@gmail.com</a>
+  </div>
+
+  <hr class="divider">
+  <div class="footer-nav">
+    <a href="index.html">Home</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+  </div>
+  <div class="footer-copy">© 2026 Job Fit Check</div>
+
+</div>
+
+<script>
+  document.getElementById('contact-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = document.getElementById('name').value;
+    var email = document.getElementById('email').value;
+    var message = document.getElementById('message').value;
+    var subject = encodeURIComponent('Job Fit Check — message from ' + name);
+    var body = encodeURIComponent('From: ' + name + ' (' + email + ')\n\n' + message);
+    window.location.href = 'mailto:mangesh.lokade.dev@gmail.com?subject=' + subject + '&body=' + body;
+  });
+</script>
+
+</body>
+</html>
