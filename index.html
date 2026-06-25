@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORYN — Job Fit Check</title>
+<meta name="description" content="Instantly analyze your resume against any job description. ATS compatibility, skill gaps, match score, and AI-powered suggestions — right from your browser.">
+<link rel="icon" href="images/logo.png" type="image/png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --black:#0a0a0a;
+  --white:#fafafa;
+  --ink-2:#1c1c1c;
+  --ink-3:#2e2e2e;
+  --gray:#6b6b6b;
+  --gray-light:#a8a8a8;
+  --hair:rgba(10,10,10,0.12);
+  --hair-on-dark:rgba(250,250,250,0.14);
+
+  --display: "Archivo Black", "Space Grotesk", sans-serif;
+  --body: "Space Grotesk", sans-serif;
+  --mono: "JetBrains Mono", monospace;
+
+  --container: 1180px;
+  --edge: clamp(24px, 5vw, 72px);
+
+  --ease: cubic-bezier(.16,.84,.32,1);
+  --ease-snap: cubic-bezier(.65,0,.35,1);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+
+body{
+  background:var(--white);
+  color:var(--black);
+  font-family:var(--body);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  line-height:1.5;
+}
+
+a{ color:inherit; text-decoration:none; }
+img{ display:block; max-width:100%; }
+
+.wrap{
+  max-width:var(--container);
+  margin:0 auto;
+  padding-left:var(--edge);
+  padding-right:var(--edge);
+}
+
+.eyebrow{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:var(--gray);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.eyebrow::before{
+  content:"";
+  width:14px;
+  height:1px;
+  background:currentColor;
+  display:inline-block;
+}
+
+/* ============================================================
+   NOISE / GRAIN OVERLAY (subtle texture, pure b/w)
+   ============================================================ */
+.grain{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:9999;
+  opacity:0.035;
+  mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:160px 160px;
+}
+
+/* ============================================================
+   SCROLL PROGRESS BLADE
+   ============================================================ */
+.progress-blade{
+  position:fixed;
+  top:0; left:0;
+  height:2px;
+  width:0%;
+  background:var(--black);
+  z-index:1001;
+  transition:width 0.08s linear;
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+nav{
+  position:fixed;
+  top:0; left:0; right:0;
+  z-index:1000;
+  background:rgba(250,250,250,0.82);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid transparent;
+  transition:border-color 0.4s var(--ease);
+}
+nav.scrolled{ border-bottom-color:var(--hair); }
+
+.nav-inner{
+  max-width:var(--container);
+  margin:0 auto;
+  padding:18px var(--edge);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.nav-brand{
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+.nav-brand img{ height:26px; width:auto; }
+.nav-brand span{
+  font-family:var(--display);
+  font-size:16px;
+  letter-spacing:0.06em;
+}
+.nav-links{
+  display:flex;
+  gap:36px;
+  font-size:13px;
+  letter-spacing:0.02em;
+}
+.nav-links a{
+  position:relative;
+  padding-bottom:4px;
+  color:var(--ink-2);
+  transition:color 0.25s var(--ease);
+}
+.nav-links a::after{
+  content:"";
+  position:absolute;
+  left:0; bottom:0;
+  width:100%; height:1px;
+  background:var(--black);
+  transform:scaleX(0);
+  transform-origin:right;
+  transition:transform 0.35s var(--ease-snap);
+}
+.nav-links a:hover{ color:var(--black); }
+.nav-links a:hover::after{ transform:scaleX(1); transform-origin:left; }
+
+.nav-cta{
+  font-family:var(--mono);
+  font-size:12px;
+  letter-spacing:0.04em;
+  padding:9px 18px;
+  border:1px solid var(--black);
+  background:var(--black);
+  color:var(--white);
+  transition:background 0.25s var(--ease), color 0.25s var(--ease);
+}
+.nav-cta:hover{ background:transparent; color:var(--black); }
+
+.nav-mobile-toggle{
+  display:none;
+  flex-direction:column;
+  gap:5px;
+  cursor:pointer;
+  background:none;
+  border:none;
+  padding:6px;
+}
+.nav-mobile-toggle span{
+  width:22px; height:1.5px;
+  background:var(--black);
+  transition:transform 0.3s var(--ease), opacity 0.3s var(--ease);
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{
+  position:relative;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding-top:140px;
+  padding-bottom:80px;
+  overflow:hidden;
+}
+
+.hero-grid-lines{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background-image:
+    linear-gradient(var(--hair) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hair) 1px, transparent 1px);
+  background-size:64px 64px;
+  mask-image:linear-gradient(to bottom, rgba(0,0,0,0.5), transparent 75%);
+  opacity:0.6;
+}
+
+.hero-inner{
+  position:relative;
+  z-index:1;
+  max-width:var(--container);
+  margin:0 auto;
+  width:100%;
+  padding-left:var(--edge);
+  padding-right:var(--edge);
+  display:grid;
+  grid-template-columns:1.15fr 0.85fr;
+  gap:48px;
+  align-items:center;
+}
+
+.hero-logo-mark{
+  display:inline-flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:28px;
+  opacity:0;
+  animation:rise 0.8s var(--ease) 0.1s forwards;
+}
+.hero-logo-mark img{ height:34px; width:auto; }
+.hero-logo-mark .tag{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--gray);
+  border-left:1px solid var(--hair);
+  padding-left:12px;
+}
+
+h1.brand-h1{
+  font-family:var(--display);
+  font-size:clamp(52px, 8vw, 88px);
+  line-height:0.92;
+  letter-spacing:-0.01em;
+  overflow:hidden;
+}
+h1.brand-h1 .line{
+  display:block;
+  overflow:hidden;
+}
+h1.brand-h1 .line span{
+  display:block;
+  transform:translateY(110%);
+  animation:rise-line 0.85s var(--ease) forwards;
+}
+h1.brand-h1 .line:nth-child(1) span{ animation-delay:0.18s; }
+
+.hero h2.tagline{
+  font-family:var(--mono);
+  font-size:clamp(13px, 1.4vw, 16px);
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--gray);
+  margin-top:18px;
+  opacity:0;
+  animation:rise 0.8s var(--ease) 0.5s forwards;
+}
+
+.hero p.lede{
+  margin-top:26px;
+  font-size:17px;
+  line-height:1.65;
+  color:var(--ink-3);
+  max-width:480px;
+  opacity:0;
+  animation:rise 0.8s var(--ease) 0.62s forwards;
+}
+
+.hero-buttons{
+  margin-top:38px;
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  opacity:0;
+  animation:rise 0.8s var(--ease) 0.74s forwards;
+}
+
+.primary-btn, .secondary-btn{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  font-family:var(--mono);
+  font-size:13px;
+  letter-spacing:0.04em;
+  padding:15px 28px;
+  border:1px solid var(--black);
+  overflow:hidden;
+  isolation:isolate;
+  cursor:pointer;
+}
+.primary-btn{
+  background:var(--black);
+  color:var(--white);
+}
+.primary-btn::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:var(--white);
+  transform:translateX(-101%);
+  transition:transform 0.4s var(--ease-snap);
+  z-index:-1;
+}
+.primary-btn:hover{ color:var(--black); }
+.primary-btn:hover::before{ transform:translateX(0); }
+.primary-btn .arrow{ transition:transform 0.3s var(--ease-snap); }
+.primary-btn:hover .arrow{ transform:translateX(4px); }
+
+.secondary-btn{
+  background:transparent;
+  color:var(--black);
+}
+.secondary-btn::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:var(--black);
+  transform:translateX(-101%);
+  transition:transform 0.4s var(--ease-snap);
+  z-index:-1;
+}
+.secondary-btn:hover{ color:var(--white); }
+.secondary-btn:hover::before{ transform:translateX(0); }
+
+/* HERO VISUAL — animated scan panel */
+.hero-visual{
+  position:relative;
+  aspect-ratio:4/5;
+  border:1px solid var(--black);
+  background:var(--white);
+  opacity:0;
+  animation:rise 0.9s var(--ease) 0.45s forwards;
+  overflow:hidden;
+}
+.hero-visual::after{
+  /* diagonal slash echoing the logo cut */
+  content:"";
+  position:absolute;
+  top:-10%;
+  left:38%;
+  width:6%;
+  height:120%;
+  background:var(--white);
+  transform:skewX(-18deg);
+  z-index:3;
+  box-shadow:-1px 0 0 var(--black), 1px 0 0 var(--black);
+}
+.scan-card{
+  position:absolute;
+  inset:0;
+  padding:26px;
+  display:flex;
+  flex-direction:column;
+  font-family:var(--mono);
+}
+.scan-card-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  font-size:11px;
+  letter-spacing:0.12em;
+  color:var(--gray);
+  padding-bottom:16px;
+  border-bottom:1px solid var(--hair);
+}
+.scan-card-head .dot{
+  width:6px; height:6px;
+  background:var(--black);
+  border-radius:50%;
+  display:inline-block;
+  margin-right:6px;
+  animation:pulse 1.6s ease-in-out infinite;
+}
+.scan-lines{
+  margin-top:20px;
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+}
+.scan-line-bar{
+  height:7px;
+  background:var(--ink-2);
+  width:0%;
+  position:relative;
+  overflow:hidden;
+}
+.scan-line-bar.match{ background:var(--black); }
+.scan-line-bar.gap{ background:var(--gray-light); }
+
+.score-readout{
+  margin-top:auto;
+  padding-top:22px;
+  border-top:1px solid var(--hair);
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+}
+.score-readout .num{
+  font-family:var(--display);
+  font-size:56px;
+  line-height:1;
+}
+.score-readout .num::after{ content:"%"; font-size:24px; }
+.score-readout .label{
+  font-size:10px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--gray);
+  text-align:right;
+  max-width:120px;
+}
+
+.sweep-beam{
+  position:absolute;
+  left:0; right:0;
+  top:0;
+  height:42%;
+  background:linear-gradient(to bottom, transparent, rgba(10,10,10,0.06), transparent);
+  animation:sweep 3.2s var(--ease) infinite;
+  pointer-events:none;
+  z-index:2;
+}
+
+@keyframes sweep{
+  0%{ transform:translateY(-100%); }
+  60%{ transform:translateY(220%); }
+  100%{ transform:translateY(220%); }
+}
+@keyframes pulse{
+  0%,100%{ opacity:1; }
+  50%{ opacity:0.25; }
+}
+@keyframes rise{
+  to{ opacity:1; transform:none; }
+  from{ opacity:0; transform:translateY(16px); }
+}
+@keyframes rise-line{
+  to{ transform:translateY(0); }
+}
+
+.scroll-cue{
+  position:absolute;
+  bottom:36px;
+  left:var(--edge);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--gray);
+  z-index:1;
+}
+.scroll-cue .line{
+  width:1px; height:34px;
+  background:var(--hair);
+  position:relative;
+  overflow:hidden;
+}
+.scroll-cue .line::after{
+  content:"";
+  position:absolute;
+  top:-100%; left:0;
+  width:100%; height:50%;
+  background:var(--black);
+  animation:scrollcue 1.8s var(--ease) infinite;
+}
+@keyframes scrollcue{
+  0%{ top:-50%; }
+  100%{ top:100%; }
+}
+
+/* ============================================================
+   SECTION HEADER (shared)
+   ============================================================ */
+.section-head{
+  max-width:640px;
+  margin-bottom:64px;
+}
+.section-head h2{
+  font-family:var(--display);
+  font-size:clamp(32px, 4.4vw, 48px);
+  line-height:1.05;
+  letter-spacing:-0.01em;
+  margin-top:16px;
+}
+.section-head p{
+  margin-top:18px;
+  font-size:16px;
+  color:var(--gray);
+  max-width:480px;
+}
+
+.reveal{
+  opacity:0;
+  transform:translateY(28px);
+  transition:opacity 0.8s var(--ease), transform 0.8s var(--ease);
+}
+.reveal.in-view{
+  opacity:1;
+  transform:none;
+}
+
+/* ============================================================
+   FEATURES
+   ============================================================ */
+#features{
+  padding:140px 0 120px;
+  border-top:1px solid var(--hair);
+  position:relative;
+}
+.feature-grid{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  border-top:1px solid var(--hair);
+  border-left:1px solid var(--hair);
+}
+.feature{
+  position:relative;
+  padding:42px 36px 38px;
+  border-right:1px solid var(--hair);
+  border-bottom:1px solid var(--hair);
+  transition:background 0.4s var(--ease);
+}
+.feature:hover{ background:var(--black); }
+.feature:hover .feature-idx,
+.feature:hover h3,
+.feature:hover p{ color:var(--white); }
+.feature:hover .feature-idx{ opacity:0.5; }
+
+.feature-idx{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--gray-light);
+  letter-spacing:0.1em;
+  transition:color 0.4s var(--ease);
+}
+.feature h3{
+  font-family:var(--body);
+  font-weight:600;
+  font-size:19px;
+  margin-top:20px;
+  letter-spacing:-0.01em;
+  transition:color 0.4s var(--ease);
+}
+.feature p{
+  margin-top:10px;
+  font-size:14.5px;
+  color:var(--gray);
+  line-height:1.55;
+  transition:color 0.4s var(--ease);
+}
+.feature-corner{
+  position:absolute;
+  top:0; right:0;
+  width:0; height:0;
+  border-style:solid;
+  border-width:0 0 0 0;
+  transition:border-width 0.35s var(--ease);
+}
+.feature:hover .feature-corner{
+  border-width:0 16px 16px 0;
+  border-color:transparent var(--white) transparent transparent;
+}
+
+/* ============================================================
+   HOW IT WORKS / PROCESS STRIP
+   ============================================================ */
+#process{
+  padding:120px 0;
+  background:var(--black);
+  color:var(--white);
+  overflow:hidden;
+}
+#process .section-head p{ color:var(--gray-light); }
+#process .eyebrow{ color:var(--gray-light); }
+
+.process-track{
+  display:flex;
+  gap:0;
+  border-top:1px solid var(--hair-on-dark);
+}
+.process-step{
+  flex:1;
+  padding:32px 28px 0;
+  border-right:1px solid var(--hair-on-dark);
+  position:relative;
+}
+.process-step:last-child{ border-right:none; }
+.process-step .step-num{
+  font-family:var(--mono);
+  font-size:13px;
+  color:var(--gray-light);
+}
+.process-step h4{
+  font-family:var(--body);
+  font-weight:600;
+  font-size:17px;
+  margin-top:14px;
+}
+.process-step p{
+  margin-top:10px;
+  font-size:14px;
+  color:var(--gray-light);
+  line-height:1.55;
+  padding-bottom:32px;
+}
+.process-step::after{
+  content:"";
+  position:absolute;
+  bottom:0; left:0;
+  width:100%; height:2px;
+  background:var(--white);
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform 0.6s var(--ease);
+}
+.process-step.in-view::after{ transform:scaleX(1); }
+
+/* ============================================================
+   SCREENSHOTS
+   ============================================================ */
+.screenshots{
+  padding:140px 0 120px;
+  border-top:1px solid var(--hair);
+}
+.screenshots-grid{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:1px;
+  background:var(--hair);
+  border:1px solid var(--hair);
+}
+.shot-frame{
+  position:relative;
+  aspect-ratio:9/16;
+  background:var(--white);
+  overflow:hidden;
+}
+.shot-frame img{
+  width:100%; height:100%;
+  object-fit:cover;
+  filter:grayscale(1) contrast(1.05);
+  transition:transform 0.6s var(--ease), filter 0.4s var(--ease);
+}
+.shot-frame:hover img{
+  transform:scale(1.04);
+  filter:grayscale(0.4) contrast(1.05);
+}
+.shot-frame .shot-tag{
+  position:absolute;
+  bottom:14px; left:14px;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:0.1em;
+  color:var(--white);
+  background:var(--black);
+  padding:5px 10px;
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.shot-frame:hover .shot-tag{ opacity:1; transform:none; }
+
+/* ============================================================
+   STATS STRIP
+   ============================================================ */
+.stats{
+  border-top:1px solid var(--hair);
+  border-bottom:1px solid var(--hair);
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+}
+.stat{
+  padding:48px 32px;
+  border-right:1px solid var(--hair);
+  text-align:left;
+}
+.stat:last-child{ border-right:none; }
+.stat .stat-num{
+  font-family:var(--display);
+  font-size:clamp(36px, 4vw, 52px);
+  letter-spacing:-0.01em;
+  display:block;
+}
+.stat .stat-label{
+  margin-top:8px;
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--gray);
+}
+
+/* ============================================================
+   CTA
+   ============================================================ */
+.cta{
+  padding:160px 0;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.cta::before{
+  content:"";
+  position:absolute;
+  top:50%; left:50%;
+  width:1px; height:0%;
+  background:var(--hair);
+  transform:translate(-50%,-50%) rotate(28deg);
+}
+.cta-inner{
+  position:relative;
+  z-index:1;
+}
+.cta h2{
+  font-family:var(--display);
+  font-size:clamp(34px, 6vw, 64px);
+  line-height:1.05;
+  letter-spacing:-0.01em;
+}
+.cta p.cta-sub{
+  margin-top:22px;
+  font-size:17px;
+  color:var(--gray);
+}
+.cta .primary-btn{
+  margin-top:42px;
+  padding:18px 36px;
+  font-size:14px;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{
+  border-top:1px solid var(--hair);
+  padding:48px 0;
+}
+.footer-inner{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:18px;
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--gray);
+}
+.footer-inner .footer-links{
+  display:flex;
+  gap:28px;
+}
+.footer-inner a{
+  position:relative;
+  transition:color 0.25s var(--ease);
+}
+.footer-inner a:hover{ color:var(--black); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 980px){
+  .hero-inner{ grid-template-columns:1fr; gap:64px; }
+  .hero-visual{ max-width:420px; margin:0 auto; aspect-ratio:1/1; }
+  .feature-grid{ grid-template-columns:repeat(2,1fr); }
+  .process-track{ flex-wrap:wrap; }
+  .process-step{ flex:1 1 50%; border-bottom:1px solid var(--hair-on-dark); }
+  .screenshots-grid{ grid-template-columns:repeat(2,1fr); }
+  .stats{ grid-template-columns:repeat(2,1fr); }
+  .stat{ border-bottom:1px solid var(--hair); }
+  .stat:nth-child(2n){ border-right:none; }
+}
+
+@media (max-width: 720px){
+  .nav-links{ display:none; }
+  .nav-mobile-toggle{ display:flex; }
+  .nav-cta{ display:none; }
+  .hero{ padding-top:120px; }
+  h1.brand-h1{ font-size:clamp(40px, 13vw, 64px); }
+  .feature-grid{ grid-template-columns:1fr; }
+  .screenshots-grid{ grid-template-columns:1fr; }
+  .stats{ grid-template-columns:1fr; }
+  .stat{ border-right:none !important; }
+  .footer-inner{ flex-direction:column; align-items:flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="progress-blade" id="progressBlade"></div>
+
+<!-- ============================ NAV ============================ -->
+<nav id="siteNav">
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">
+      <img src="images/logo.png" alt="ORYN logo">
+      <span>ORYN</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#process">How it works</a>
+      <a href="#screenshots">Preview</a>
+      <a href="#cta">Install</a>
+    </div>
+    <a href="#" class="nav-cta">Add to Chrome</a>
+    <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ============================ HERO ============================ -->
+<section class="hero">
+  <div class="hero-grid-lines"></div>
+
+  <div class="hero-inner">
+    <div>
+      <div class="hero-logo-mark">
+        <img src="images/logo.png" alt="ORYN">
+        <span class="tag">Chrome Extension</span>
+      </div>
+
+      <h1 class="brand-h1">
+        <span class="line"><span>JOB FIT</span></span>
+        <span class="line"><span>CHECK</span></span>
+      </h1>
+
+      <h2 class="tagline">Resume ↔ job description, scored in seconds</h2>
+
+      <p class="lede">
+        Instantly analyze your resume against any job description. Get ATS compatibility,
+        skill gaps, match score, keyword analysis, strengths, weaknesses, and AI-powered
+        improvement suggestions — directly from your browser.
+      </p>
+
+      <div class="hero-buttons">
+        <a href="#" class="primary-btn">Add To Chrome <span class="arrow">→</span></a>
+        <a href="#features" class="secondary-btn">Explore Features</a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="sweep-beam"></div>
+      <div class="scan-card">
+        <div class="scan-card-head">
+          <span><span class="dot"></span>ANALYZING_RESUME.PDF</span>
+          <span id="scanStatus">SCANNING</span>
+        </div>
+        <div class="scan-lines">
+          <div class="scan-line-bar match" data-w="92"></div>
+          <div class="scan-line-bar match" data-w="78"></div>
+          <div class="scan-line-bar gap" data-w="40"></div>
+          <div class="scan-line-bar match" data-w="85"></div>
+          <div class="scan-line-bar gap" data-w="28"></div>
+        </div>
+        <div class="score-readout">
+          <span class="num" id="scoreNum">0</span>
+          <span class="label">Job Match<br>Score</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <span>Scroll</span>
+    <span class="line"></span>
+  </div>
+</section>
+
+<!-- ============================ FEATURES ============================ -->
+<section id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">What it checks</div>
+      <h2>Every angle of fit, before you hit apply.</h2>
+      <p>Seven checks run automatically the moment you open a job listing — no uploads, no waiting room.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="feature-grid reveal">
+
+      <div class="feature">
+        <div class="feature-corner"></div>
+        <div class="feature-idx">01 / SCORE</div>
+        <h3>Job Match Score</h3>
+        <p>Understand how closely your resume matches the selected job, expressed as a single clear percentage.</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-corner"></div>
+        <div class="feature-idx">02 / ATS</div>
+        <h3>ATS Compatibility Check</h3>
+        <p>Detect formatting and parsing issues before a recruiter — or the bot before them — ever sees your resume.</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-corner"></div>
+        <div class="feature-idx">03 / KEYWORDS</div>
+        <h3>Missing Keywords</h3>
+        <p>Find the important terms from the job description that are missing from your resume entirely.</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-corner"></div>
+        <div class="feature-idx">04 / SKILLS</div>
+        <h3>Skill Gap Analysis</h3>
+        <p>Identify the specific skills the role requires that your current resume doesn't yet demonstrate.</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-corner"></div>
+        <div class="feature-idx">05 / STRENGTHS</div>
+        <h3>Resume Strengths</h3>
+        <p>See what already makes your profile competitive for this exact role, not just resumes in general.</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-corner"></div>
+        <div class="feature-idx">06 / SUGGEST</div>
+        <h3>Improvement Suggestions</h3>
+        <p>Receive specific, actionable AI recommendations you can act on in minutes, not vague advice.</p>
+      </div>
+
+      <div class="feature" style="grid-column: span 1;">
+        <div class="feature-corner"></div>
+        <div class="feature-idx">07 / ONE-CLICK</div>
+        <h3>One Click Analysis</h3>
+        <p>Analyze any job directly from LinkedIn, YC Jobs, Wellfound, Naukri, and more — no copy-pasting.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================ PROCESS ============================ -->
+<section id="process">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">The flow</div>
+      <h2>From job listing to verdict in three steps.</h2>
+      <p>No dashboards to learn. ORYN reads what's already on the page.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="process-track">
+      <div class="process-step reveal">
+        <div class="step-num">01</div>
+        <h4>Open a job listing</h4>
+        <p>Browse LinkedIn, YC Jobs, Wellfound, Naukri, or any job page as you normally would.</p>
+      </div>
+      <div class="process-step reveal">
+        <div class="step-num">02</div>
+        <h4>Click ORYN</h4>
+        <p>One click reads the job description and pulls in your saved resume automatically.</p>
+      </div>
+      <div class="process-step reveal">
+        <div class="step-num">03</div>
+        <h4>Get your breakdown</h4>
+        <p>Match score, ATS issues, keyword gaps, and suggestions appear in seconds.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SCREENSHOTS ============================ -->
+<section class="screenshots" id="screenshots">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">Inside the extension</div>
+      <h2>Extension Preview</h2>
+      <p>A look at the panel that opens right where you're already browsing.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="screenshots-grid reveal">
+      <div class="shot-frame">
+        <img src="images/1.png" alt="ORYN screenshot — match score view">
+        <span class="shot-tag">MATCH SCORE</span>
+      </div>
+      <div class="shot-frame">
+        <img src="images/2.png" alt="ORYN screenshot — ATS check view">
+        <span class="shot-tag">ATS CHECK</span>
+      </div>
+      <div class="shot-frame">
+        <img src="images/3.png" alt="ORYN screenshot — keyword gaps view">
+        <span class="shot-tag">KEYWORDS</span>
+      </div>
+      <div class="shot-frame">
+        <img src="images/4.png" alt="ORYN screenshot — suggestions view">
+        <span class="shot-tag">SUGGESTIONS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ STATS ============================ -->
+<div class="wrap">
+  <div class="stats reveal">
+    <div class="stat">
+      <span class="stat-num">7</span>
+      <span class="stat-label">Checks per scan</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">&lt;5s</span>
+      <span class="stat-label">Average analysis time</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">4+</span>
+      <span class="stat-label">Supported job boards</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">1‑click</span>
+      <span class="stat-label">No copy-paste needed</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ CTA ============================ -->
+<section class="cta" id="cta">
+  <div class="wrap cta-inner reveal">
+    <h2>Apply smarter.<br>Get more interviews.</h2>
+    <p class="cta-sub">Stop guessing whether your resume fits the job.</p>
+    <a href="#" class="primary-btn">Install ORYN — Job Fit Check <span class="arrow">→</span></a>
+  </div>
+</section>
+
+<!-- ============================ FOOTER ============================ -->
+<footer>
+  <div class="wrap footer-inner">
+    <div>© 2026 ORYN — Job Fit Check</div>
+    <div class="footer-links">
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ===== Nav scroll state =====
+const nav = document.getElementById('siteNav');
+const blade = document.getElementById('progressBlade');
+
+function onScroll(){
+  nav.classList.toggle('scrolled', window.scrollY > 8);
+  const h = document.documentElement;
+  const scrolled = (h.scrollTop || document.body.scrollTop);
+  const height = h.scrollHeight - h.clientHeight;
+  blade.style.width = (height > 0 ? (scrolled/height)*100 : 0) + '%';
+}
+window.addEventListener('scroll', onScroll, { passive:true });
+onScroll();
+
+// ===== Mobile nav toggle (simple inline menu) =====
+const toggle = document.getElementById('mobileToggle');
+let mobileOpen = false;
+toggle.addEventListener('click', () => {
+  mobileOpen = !mobileOpen;
+  const links = document.querySelector('.nav-links');
+  if(mobileOpen){
+    links.style.display = 'flex';
+    links.style.position = 'fixed';
+    links.style.top = '64px';
+    links.style.left = '0';
+    links.style.right = '0';
+    links.style.flexDirection = 'column';
+    links.style.padding = '24px var(--edge)';
+    links.style.background = 'var(--white)';
+    links.style.borderBottom = '1px solid var(--hair)';
+    links.style.gap = '20px';
+    toggle.children[0].style.transform = 'translateY(6.5px) rotate(45deg)';
+    toggle.children[1].style.opacity = '0';
+    toggle.children[2].style.transform = 'translateY(-6.5px) rotate(-45deg)';
+  } else {
+    links.removeAttribute('style');
+    toggle.children[0].style.transform = '';
+    toggle.children[1].style.opacity = '';
+    toggle.children[2].style.transform = '';
+  }
+});
+
+// ===== Scroll reveal =====
+const revealEls = document.querySelectorAll('.reveal, .process-step');
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.classList.add('in-view');
+    }
+  });
+}, { threshold: 0.15 });
+revealEls.forEach(el => io.observe(el));
+
+// ===== Hero scan animation =====
+function runScan(){
+  const bars = document.querySelectorAll('.scan-line-bar');
+  const scoreNum = document.getElementById('scoreNum');
+  const status = document.getElementById('scanStatus');
+
+  bars.forEach(b => b.style.width = '0%');
+  scoreNum.textContent = '0';
+  status.textContent = 'SCANNING';
+
+  bars.forEach((bar, i) => {
+    setTimeout(() => {
+      bar.style.transition = 'width 0.9s cubic-bezier(.16,.84,.32,1)';
+      bar.style.width = bar.dataset.w + '%';
+    }, 250 + i * 140);
+  });
+
+  const target = 87;
+  const duration = 1400;
+  const startDelay = 900;
+  const startTime = Date.now() + startDelay;
+
+  function tick(){
+    const now = Date.now();
+    if(now < startTime){ requestAnimationFrame(tick); return; }
+    const progress = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    scoreNum.textContent = Math.round(eased * target);
+    if(progress < 1){
+      requestAnimationFrame(tick);
+    } else {
+      status.textContent = 'COMPLETE';
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+runScan();
+setInterval(runScan, 6000);
+</script>
+
+</body>
+</html>
